@@ -17,6 +17,7 @@
 
 ## pre-deployment
 1. port forward 80 (http), 443 (https), 22 (or custom port for direct ssh), and 2222 (alt ssh for forgejo ssh git interaction) via router config
+1. lock in static LAN IP for server via router config (change from DHCP)
 1. generate API keys in porkbun and enable API access for primary domain
 
 ## steps
