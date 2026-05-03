@@ -1,0 +1,51 @@
+services:
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SITE_DOMAIN=${SITE_DOMAIN}
+      - FORGEJO_DOMAIN=${FORGEJO_DOMAIN}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+      - /srv/www:/srv/www
+    networks:
+      - kicanter_net
+
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:latest
+    container_name: forgejo
+    restart: always
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+    ports:
+      - "2222:22"
+    volumes:
+      - ./forgejo/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - kicanter_net
+
+  ddclient:
+    image: lscr.io/linuxserver/ddclient:latest
+    container_name: ddclient
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ./ddclient/ddclient.conf:/config/ddclient.conf
+    networks:
+      - kicanter_net
+
+networks:
+  kicanter_net:
+    driver: bridge

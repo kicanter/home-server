@@ -1,0 +1,64 @@
+#!/bin/bash
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Need root
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}Please run as root/with sudo${NC}"
+    exit 1
+fi
+
+# Make sure to rename .env.example to .env and set secrets before running this!
+if [ ! -f ".env" ]; then
+    echo "${RED}Error: `.env` file not found!${NC}"
+    echo "Remember to rename `.env.example` and add your secrets"
+    exit 1
+fi
+
+STACK_DIR="/opt/stacks/${SITE_DOMAIN}"
+SITE_DIR="/srv/www/${SITE_DOMAIN}"
+REAL_USER=${SUDO_USER:-$USER}
+source .env
+
+echo "${BLUE}Starting infrastructure setup...${NC}"
+
+# Establish system directories
+sudo mkdir -p $STACK_DIR/caddy $STACK_DIR/ddclient $STACK_DIR/forgejo/data $SITE_DIR
+sudo chown -R $REAL_USER:$REAL_USER $STACK_DIR $SITE_DIR
+
+# Install deps
+sudo apt update && sudo apt install -y docker.io docker-compose git ufw fail2ban
+
+# Copy config files
+echo "${BLUE}Copying configuration files...${NC}"
+cp configs/Caddyfile $STACK_DIR/caddy/Caddyfile
+cp configs/ddclent.conf $STACK_DIR/ddclient/ddclient.conf
+cp docker-compose.yaml $STACK_DIR/docker-compose.yaml
+cp .env $STACK_DIR/.env
+# replace placeholders with env vars in ddclient.conf
+sed -i "s/PORKBUN_API_KEY_PLACEHOLDER/${PORKBUN_API_KEY}/" $STACK_DIR/ddclient/ddclient.conf
+sed -i "s/PORKBUN_SECRET_KEY_PLACEHOLDER/${PORKBUN_SECRET_KEY}/" $STACK_DIR/ddclient/ddclient.conf
+sed -i "s/DOMAIN_PLACEHOLDER/${SITE_DOMAIN}/" $STACK_DIR/ddclient/ddclient.conf
+
+echo "${BLUE}Hardening SSH...${NC}"
+# replace placeholder with env vars in sshd_config
+sed -i "s/USER_PLACEHOLDER/$REAL_USER/" configs/sshd_config
+sudo cp configs/ssh/sshd_config /etc/ssh/sshd_config
+sudo chmod 644 /etc/ssh/sshd_config
+sudo sshd -t && sudo sytemctl restart ssh
+
+# Create fail2ban
+echo "${BLUE}Setting up fail2ban...${NC}"
+sudo cp configs/jail.local /etc/fail2ban/jail.local
+sudo systemctl restart fail2ban
+
+# Secure host firewall
+echo "${BLUE}Configuring firewall...${NC}"
+sudo ufw allow 80,443,2222,22/tcp
+sudo ufw --force enable
+
+echo "${GREEN}Site infrastructure setup complete!${NC}"
+echo "Now run `${BLUE}cd $STACK_DIR && docker-compose up -d${NC}` to start running the container."

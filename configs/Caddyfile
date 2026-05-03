@@ -1,0 +1,10 @@
+# Personal site
+{$SITE_DOMAIN} {
+    root * /srv/www/kicanter.dev
+    file_server
+}
+
+# Forgejo instance
+{$FORGEJO_DOMAIN} {
+    reverse_proxy forgejo:3000
+}
