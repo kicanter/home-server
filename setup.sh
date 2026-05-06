@@ -38,6 +38,15 @@ if ! id "git" &>/dev/null; then
     sudo adduser --disabled-password --gecos "" git
 fi
 
+echo -e "${BLUE}Adding $REAL_USER to the docker group...${NC}"
+if ! groups "$REAL_USER" | grep -q "\bdocker\b"; then
+    sudo groupadd -f docker
+    sudo usermod -aG docker "$REAL_USER"
+    echo -e "${YELLOW}Note: You will need to log out and back in for the 'docker' group to take effect.${NC}"
+else
+    echo -e "${GREEN}User $REAL_USER is already in the docker group.${NC}"
+fi
+
 # Copy config files
 echo -e "${BLUE}Copying configuration files...${NC}"
 cp configs/forgejo-shell /usr/local/bin/forgejo-shell # Copy the standalone shell file to the system path
