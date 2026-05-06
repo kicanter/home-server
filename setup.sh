@@ -33,7 +33,7 @@ sudo chown -R $REAL_USER:$REAL_USER $STACK_DIR $SITE_DIR
 sudo apt update && sudo apt install -y docker.io docker-compose git ufw fail2ban
 
 # Forgejo passthrough
-echo -e "${BLUE}🛡️ Setting up Forgejo SSH Passthrough...${NC}"
+echo "${BLUE} Setting up Forgejo SSH Passthrough...${NC}"
 if ! id "git" &>/dev/null; then
     sudo adduser --disabled-password --gecos "" git
 fi
