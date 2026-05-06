@@ -7,7 +7,7 @@ NC='\033[0m'
 
 # Need root
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}Please run as root/with sudo${NC}"
+    echo -e "${RED}Please run as with sudo${NC}"
     exit 1
 fi
 
@@ -18,10 +18,10 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
+source .env
 STACK_DIR="/opt/stacks/${SITE_DOMAIN}"
 SITE_DIR="/srv/www/${SITE_DOMAIN}"
 REAL_USER=${SUDO_USER:-$USER}
-source .env
 
 echo "${BLUE}Starting infrastructure setup...${NC}"
 
@@ -32,23 +32,34 @@ sudo chown -R $REAL_USER:$REAL_USER $STACK_DIR $SITE_DIR
 # Install deps
 sudo apt update && sudo apt install -y docker.io docker-compose git ufw fail2ban
 
+# Forgejo passthrough
+echo -e "${BLUE}🛡️ Setting up Forgejo SSH Passthrough...${NC}"
+if ! id "git" &>/dev/null; then
+    sudo adduser --disabled-password --gecos "" git
+fi
+
 # Copy config files
 echo "${BLUE}Copying configuration files...${NC}"
+cp configs/forgejo-shell /usr/local/bin/forgejo-shell # Copy the standalone shell file to the system path
+chmod +x /usr/local/bin/forgejo-shell
+usermod -s /usr/local/bin/forgejo-shell git
 cp configs/Caddyfile $STACK_DIR/caddy/Caddyfile
-cp configs/ddclent.conf $STACK_DIR/ddclient/ddclient.conf
+cp configs/ddclient.conf $STACK_DIR/ddclient/ddclient.conf
 cp docker-compose.yaml $STACK_DIR/docker-compose.yaml
 cp .env $STACK_DIR/.env
+
 # replace placeholders with env vars in ddclient.conf
 sed -i "s/PORKBUN_API_KEY_PLACEHOLDER/${PORKBUN_API_KEY}/" $STACK_DIR/ddclient/ddclient.conf
 sed -i "s/PORKBUN_SECRET_KEY_PLACEHOLDER/${PORKBUN_SECRET_KEY}/" $STACK_DIR/ddclient/ddclient.conf
 sed -i "s/DOMAIN_PLACEHOLDER/${SITE_DOMAIN}/" $STACK_DIR/ddclient/ddclient.conf
+sed -i "s/FORGEJO_PLACEHOLDER/${FORGEJO_DOMAIN}/" $STACK_DIR/ddclient/ddclient.conf
 
 echo "${BLUE}Hardening SSH...${NC}"
 # replace placeholder with env vars in sshd_config
-sed -i "s/USER_PLACEHOLDER/$REAL_USER/" configs/sshd_config
-sudo cp configs/ssh/sshd_config /etc/ssh/sshd_config
+sudo cp configs/sshd_config /etc/ssh/sshd_config
+sudo sed -i "s/USER_PLACEHOLDER/$REAL_USER/" /etc/ssh/sshd_config
 sudo chmod 644 /etc/ssh/sshd_config
-sudo sshd -t && sudo sytemctl restart ssh
+sudo sshd -t && sudo systemctl restart ssh
 
 # Create fail2ban
 echo "${BLUE}Setting up fail2ban...${NC}"
@@ -57,7 +68,7 @@ sudo systemctl restart fail2ban
 
 # Secure host firewall
 echo "${BLUE}Configuring firewall...${NC}"
-sudo ufw allow 80,443,2222,22/tcp
+sudo ufw allow 80,443,4922,22/tcp
 sudo ufw --force enable
 
 echo "${GREEN}Site infrastructure setup complete!${NC}"

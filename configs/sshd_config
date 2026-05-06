@@ -1,34 +1,32 @@
-# Change to a custom port (e.g., 4922) to avoid 99% of bot scans.
-# If I change this, update Router Port Forwarding and UFW!
+# --- NETWORK SETTINGS ---
+# Port 22 is Git Passthrough.
+# Port 4922 is for direct server access.
 Port 22
+Port 4922
 Protocol 2
 AddressFamily inet
 
-# Disable root login. You should login as your user and use sudo.
 PermitRootLogin no
-
-# Force SSH Keys. Disable all password-based login.
 PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 ChallengeResponseAuthentication no
 UsePAM no
 
-# Only allow your specific username to login.
-# Replace 'youruser' with your actual Linux username.
-AllowUsers USER_PLACEHOLDER
+AllowUsers USER_PLACEHOLDER git
 
-# Logging/timeouts
 LogLevel VERBOSE
 LoginGraceTime 30
 MaxAuthTries 3
 MaxSessions 2
 
-# Disable these unless you specifically need them for your apps.
 X11Forwarding no
-AllowTcpForwarding no
 AllowAgentForwarding no
 PermitTunnel no
 
-# Keeps the SFTP subsystem active but secure.
+Match User git
+    AllowTcpForwarding yes
+    # This forces the git user to ONLY use the Forgejo shell shim
+    ForceCommand /usr/local/bin/forgejo-shell
+
 Subsystem sftp /usr/lib/openssh/sftp-server

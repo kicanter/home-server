@@ -1,6 +1,6 @@
 # Personal site
 {$SITE_DOMAIN} {
-    root * /srv/www/kicanter.dev
+    root * /srv/www/{$SITE_DOMAIN}
     file_server
 }
 
