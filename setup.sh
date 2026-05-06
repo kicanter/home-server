@@ -72,4 +72,4 @@ sudo ufw allow 80,443,4922,22/tcp
 sudo ufw --force enable
 
 echo "${GREEN}Site infrastructure setup complete!${NC}"
-echo "Now run `${BLUE}cd $STACK_DIR && docker-compose up -d${NC}` to start running the container."
+echo -e "Now run \`${BLUE}cd $STACK_DIR && docker-compose up -d${NC}\` to start running the container."
