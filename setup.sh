@@ -13,8 +13,8 @@ fi
 
 # Make sure to rename .env.example to .env and set secrets before running this!
 if [ ! -f ".env" ]; then
-    echo "${RED}Error: `.env` file not found!${NC}"
-    echo "Remember to rename `.env.example` and add your secrets"
+    echo -e "${RED}Error: `.env` file not found!${NC}"
+    echo -e "Remember to rename `.env.example` and add your secrets"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ STACK_DIR="/opt/stacks/${SITE_DOMAIN}"
 SITE_DIR="/srv/www/${SITE_DOMAIN}"
 REAL_USER=${SUDO_USER:-$USER}
 
-echo "${BLUE}Starting infrastructure setup...${NC}"
+echo -e "${BLUE}Starting infrastructure setup...${NC}"
 
 # Establish system directories
 sudo mkdir -p $STACK_DIR/caddy $STACK_DIR/ddclient $STACK_DIR/forgejo/data $SITE_DIR
@@ -33,13 +33,13 @@ sudo chown -R $REAL_USER:$REAL_USER $STACK_DIR $SITE_DIR
 sudo apt update && sudo apt install -y docker.io docker-compose git ufw fail2ban
 
 # Forgejo passthrough
-echo "${BLUE} Setting up Forgejo SSH Passthrough...${NC}"
+echo -e "${BLUE} Setting up Forgejo SSH Passthrough...${NC}"
 if ! id "git" &>/dev/null; then
     sudo adduser --disabled-password --gecos "" git
 fi
 
 # Copy config files
-echo "${BLUE}Copying configuration files...${NC}"
+echo -e "${BLUE}Copying configuration files...${NC}"
 cp configs/forgejo-shell /usr/local/bin/forgejo-shell # Copy the standalone shell file to the system path
 chmod +x /usr/local/bin/forgejo-shell
 usermod -s /usr/local/bin/forgejo-shell git
@@ -54,7 +54,7 @@ sed -i "s/PORKBUN_SECRET_KEY_PLACEHOLDER/${PORKBUN_SECRET_KEY}/" $STACK_DIR/ddcl
 sed -i "s/DOMAIN_PLACEHOLDER/${SITE_DOMAIN}/" $STACK_DIR/ddclient/ddclient.conf
 sed -i "s/FORGEJO_PLACEHOLDER/${FORGEJO_DOMAIN}/" $STACK_DIR/ddclient/ddclient.conf
 
-echo "${BLUE}Hardening SSH...${NC}"
+echo -e "${BLUE}Hardening SSH...${NC}"
 # replace placeholder with env vars in sshd_config
 sudo cp configs/sshd_config /etc/ssh/sshd_config
 sudo sed -i "s/USER_PLACEHOLDER/$REAL_USER/" /etc/ssh/sshd_config
@@ -62,14 +62,14 @@ sudo chmod 644 /etc/ssh/sshd_config
 sudo sshd -t && sudo systemctl restart ssh
 
 # Create fail2ban
-echo "${BLUE}Setting up fail2ban...${NC}"
+echo -e "${BLUE}Setting up fail2ban...${NC}"
 sudo cp configs/jail.local /etc/fail2ban/jail.local
 sudo systemctl restart fail2ban
 
 # Secure host firewall
-echo "${BLUE}Configuring firewall...${NC}"
+echo -e "${BLUE}Configuring firewall...${NC}"
 sudo ufw allow 80,443,4922,22/tcp
 sudo ufw --force enable
 
-echo "${GREEN}Site infrastructure setup complete!${NC}"
-echo -e "Now run \`${BLUE}cd $STACK_DIR && docker-compose up -d${NC}\` to start running the container."
+echo -e "${GREEN}Site infrastructure setup complete!${NC}"
+echo -e -e "Now run \`${BLUE}cd $STACK_DIR && docker-compose up -d${NC}\` to start running the container."
