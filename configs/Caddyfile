@@ -1,7 +1,16 @@
 # Personal site
 {$SITE_DOMAIN} {
-    root * /srv/www/{$SITE_DOMAIN}
-    file_server
+    root * /srv/www/{$SITE_DOMAIN}/src
+    @publicFile file {
+        root /srv/www/{$SITE_DOMAIN}/public
+    }
+    handle @publicFile {
+        root * /srv/www/{$SITE_DOMAIN}/public
+        file_server
+    }
+    handle {
+        file_server
+    }
 }
 
 # Forgejo instance
